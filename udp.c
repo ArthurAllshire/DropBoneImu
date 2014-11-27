@@ -11,35 +11,45 @@
 
 static int sockfd = -1; // file descriptor for the socket
 static struct ifaddrs *ifap; // linked list of broadcast interfaces
-static struct sockaddr_in serv_addr;
 static int since_hb = 10; // number of packets since the last heartbeat
 
 int set_up_socket()
 {
 	struct ifaddrs *ifa;
+    struct sockaddr_in recvAddr;
+    struct timeval tv;
 	int broadcast = 1;
 	
-	serv_addr.sin_family=AF_INET;
-	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-    serv_addr.sin_port=htons(BINDPORT);
+    
+    memset(&recvAddr,'\0', sizeof(recvAddr));
+    recvAddr.sin_family = AF_INET;
+    recvAddr.sin_port = htons(BINDPORT);
+    recvAddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	
-	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		printf("Error: creating socket\n");
 		return -1;
 	}
 	
 	if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof broadcast) == -1) {
-		printf("Error: setsockopt\n");
+		printf("Error: broadcast options\n");
 		return -1;
+	}
+    
+    
+    tv.tv_sec = 1;
+    tv.tv_usec = 1000000; //connection timeot
+    if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval)) == -1) {
+        printf("Error: timeout options\n");
+    }
+    
+    if(bind(sockfd, (struct sockaddr *) &recvAddr, sizeof recvAddr)) {
+		printf("Error: binding socket\n");
 	}
 	
 	if((getifaddrs(&ifap)) == -1) {
 		printf("Error: obtaining network interface information (getifaddrs)");
 		return -1;
-	}
-	
-	if(bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(struct sockaddr))) {
-		printf("Error: binding socket");
 	}
 	
 	// set ports for the broadcast addresses
