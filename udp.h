@@ -3,6 +3,8 @@
 
 #define SERVPORT 4774 // the port on which the packets are broadcast on
 #define FLEN 12 // maximum number of characters allowed for each float
+#define SINCEHEARTBEATMAX 10 // the maximum number of packets which can be sent before the server times out due to no received heartbeats
+#define BINDPORT 4773
 
 // set up a socket and configure it to broadcast data over UDP
 int set_up_socket();
